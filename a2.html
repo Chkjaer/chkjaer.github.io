@@ -90,17 +90,15 @@
               delay(3); // This delay controls the speed of the fade out
           }
 
-            buttonState = digitalRead(3); // Re-checks if button is still pressed
+          buttonState = digitalRead(3); // Re-checks if button is still pressed
 
-            if(buttonState == LOW){ // If the button is no longer pressed, will fade in the green LED
-              for(int i = 0; i < 256; i++){  // Fades in green LED to full brightness
-                analogWrite(G, i); // sets Green LED's brightness to current step in for loop
-                delay(1); // controls speed of fade in
-              }
+          if(buttonState == LOW){ // If the button is no longer pressed, will fade in the green LED
+            for(int i = 0; i < 256; i++){  // Fades in green LED to full brightness
+              analogWrite(G, i); // sets Green LED's brightness to current step in for loop
+              delay(1); // controls speed of fade in
             }
-
-            delay(5); // allows for time for more precise button state check before loop repeats
-
+          }
+          delay(5); // allows for time for more precise button state check before loop repeats
         }
       }
 </pre>
