@@ -4,15 +4,107 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
 
-    <title>Example Student's HCDE 439 Physical Computing Page!</title>
+    <title>Christian Kjaer's HCDE 439 A2 FAD!</title>
 
     <link href="style.css" rel="stylesheet" type="text/css" />
   </head>
   <body>
-    <h1>Example Student's Assignment 2!</h1>
+    <h1>FADE! Assignment 2</h1>
     <div class="header">
-      <img src="red-panda.jpg" />
-      <p>Here is all the documentation for assignment 2!</p>
+      <h2>Here is my FADE A2!<h2>
     </div>
-  </body>
+    <div class="gif">
+      <img src="A2FADE!/demo.gif" />
+    </div>
+    <br>
+    <div class="Schematics">
+      <h2>Schematics</h2>
+        <img src="A2FADE!/images/Frame 2.png">
+      <h3>Resistance calculations:</h3>
+      <p>For the button, I used a pull-down resistor so we have a very low current when the button isn't pressed<p>
+      <p>With 5v power, I used a 10K Ohm resistor to get a very low current of .5 mA. This will ensure pin 2 reads LOW when the button is not pressed.</p>
+      <br>
+      <p>Red and Green LED: 5v Power - 1.8v drop = 3.2v = .02 Amps x Resistance</p>
+      <p>Resistance = 3.2v / .02 Amps = 160 Ohms -> Use a 220 Ohm resistor</p>
+      <br>
+      <p>Blue LED: 5v Power - 3.3v drop = 1.7v = .02 Amps x Resistance</p>
+      <p>Resistance = 1.7v / .02 Amps = 85 Ohms -> Use a 100 Ohm resistor</p>
+      <br>
+    <br>
+    </div>
+    <div class="Circuit">
+      <h2>Circuit</h2>
+        <img src="A2FADE!/images/A4 - 1.png">
+    </div>
+    <br>
+    <div class="Graph">
+      <h2>Graph</h2>
+    </div>
+  </div>
+  <div class="Questions">
+    <h2>Questions</h2>
+    <h3>2: Given your schematic, circuit, and firmware, assuming the only thing that draws current is your LEDs, how long would your circuit run if powered by a 1200 mAh battery?</h3>
+  </div>
+  <br>
+  <div class="CodeSnippet">
+    <h2>Code Snippet</h2>
+    <pre>
+      // A2 Fade! HCDE 439
+      // Christian Kjaer
+
+      const int R = 9; // stores integer value of pin for red LED as "R"
+      const int G = 10; // stores integer value of pin for green LED as "G"
+      const int B = 11; // stores integer value of pin for blue LED as "B"
+      int buttonState = 0; // initializes global variable to be used to store the button's state
+      
+      void setup() {
+      pinMode(R, OUTPUT); // initializes digital pin 9, assigned "R", as an output for the red LED
+      pinMode(G, OUTPUT); // initializes digital pin 10, assigned "G", as an output for the green LED
+      pinMode(B, OUTPUT); // initializes digital pin 11, assigned "B", as an output for the blue LED
+      pinMode(3, INPUT); // initializes digital pin 3 as an input to recieve a signal from a button
+      }
+      
+      void loop() {
+        digitalWrite(G, HIGH); // sets the non-button-pressed behavior to be a static green light
+        buttonState = digitalRead(3); // reads for input from the button; will be HIGH when pressed and LOW when not pressed.
+
+        if (buttonState == HIGH) { // if button is pressed, will fade out green.
+          for(int i = 255; i >= 0; i--){ // Fades green LED all the way out
+            analogWrite(G, i); // Sets green LED's brightness to current step in for loop
+            delay(1); // controls speed of fade out
+          }
+        }
+
+        while(buttonState == HIGH) { // While the button is pressed, a pink light will fade on and off in place of the static green light
+          digitalWrite(G, LOW); // While the button is pressed, this ensures the green LED will stay off
+
+          for(int i = 0; i < 256; i++) { // Fades in a pink light to full brightness
+              analogWrite(R, i); // Sets red LED's brightness to current step in for loop
+              analogWrite(B, .5 * i); // Sets the blue LED's brightness to half the brightness of the red LED
+              delay(3); // This delay controls the speed of the fade in
+          } 
+
+          for(int i = 255; i >= 0; i--){ // Fades pink light all the way out
+              analogWrite(R, i); // Sets red LED's brightness to current step in for loop
+              analogWrite(B, .5 * i); // // Sets the blue LED's brightness to half the brightness of the Red LED
+              delay(3); // This delay controls the speed of the fade out
+          }
+
+            buttonState = digitalRead(3); // Re-checks if button is still pressed
+
+            if(buttonState == LOW){ // If the button is no longer pressed, will fade in the green LED
+              for(int i = 0; i < 256; i++){  // Fades in green LED to full brightness
+                analogWrite(G, i); // sets Green LED's brightness to current step in for loop
+                delay(1); // controls speed of fade in
+              }
+            }
+
+            delay(5); // allows for time for more precise button state check before loop repeats
+
+        }
+      }
+</pre>
+</div>
+</body>
 </html>
+

@@ -1,62 +1,45 @@
-/*
-A1 Blink! HCDE 439
-Christian Kjaer
+Christian
 
-Attribution: Code is based on Blink! Example from Arduino. The documentation for Blink example is included here:
-  Blink
+const int R = 9; // stores integer value of pin for red LED as "R"
+const int G = 10; // stores integer value of pin for green LED as "G"
+const int B = 11; // stores integer value of pin for blue LED as "B"
+int buttonState = 0; // initializes global variable to be used to store the button's state
 
-  Turns an LED on for one second, then off for one second, repeatedly.
-
-  Most Arduinos have an on-board LED you can control. On the UNO, MEGA and ZERO
-  it is attached to digital pin 13, on MKR1000 on pin 6. LED_BUILTIN is set to
-  the correct LED pin independent of which board is used.
-  If you want to know what pin the on-board LED is connected to on your Arduino
-  model, check the Technical Specs of your board at:
-  https://www.arduino.cc/en/Main/Products
-
-  modified 8 May 2014
-  by Scott Fitzgerald
-  modified 2 Sep 2016
-  by Arturo Guadalupi
-  modified 8 Sep 2016
-  by Colby Newman
-
-  This example code is in the public domain.
-
-  https://www.arduino.cc/en/Tutorial/BuiltInExamples/Blink
-*/
-
-// the setup function runs once when you press reset or power the board
 void setup() {
-  pinMode(10, OUTPUT); // initialize digital pin 10 (Red LED) as an output.
-  pinMode(9, OUTPUT); // initialize digital pin 9 (Green LED) as an output.
-  pinMode(8, OUTPUT); //  initialize digital pin 8 (Blue LED) as an output.
+pinMode(R, OUTPUT); // initializes digital pin 9, assigned "R", as an output for the red LED
+pinMode(G, OUTPUT); // initializes digital pin 10, assigned "G", as an output for the green LED
+pinMode(B, OUTPUT); // initializes digital pin 11, assigned "B", as an output for the blue LED
+pinMode(3, INPUT); // initializes digital pin 3 as an input to recieve a signal from a button
 }
 
-// the loop function runs over and over again forever
 void loop() {
-  digitalWrite(10, HIGH);  // turn the Red LED on (HIGH is the voltage level)
-    delay(500);                    // wait for .5 seconds
-  digitalWrite(10, LOW);   // turn the Red LED off by making the voltage LOW
-    delay(50);                       // wait for .05 seconds
-  digitalWrite(9, HIGH); // turn the Green LED on (HIGH is the voltage level)
-    delay(500);                      // wait for .5 seconds
-  digitalWrite(9, LOW);    // turn the Green LED off by making the voltage LOW
-    delay(50);                       // wait for .05 seconds
-  digitalWrite(10, HIGH);  // turn the Red LED on (HIGH is the voltage level)
-    delay(500);                      // wait for .5 seconds
-  digitalWrite(10, LOW);   // turn the Red LED off by making the voltage LOW
-    delay(50);                       // wait for .05 seconds
-  digitalWrite(8, HIGH);   // turn the Blue  LED on (HIGH is the voltage level)
-    delay(500);                      // wait for .5 seconds
-  digitalWrite(8, LOW);    // turn the Blue LED off by making the voltage LOW
-    delay(50);                       // wait for .05 seconds
-  digitalWrite(9, HIGH); // turn the Green LED on (HIGH is the voltage level)
-    delay(500);                      // wait for .5 seconds
-  digitalWrite(9, LOW);   // turn the Green LED off by making the voltage LOW
-    delay(50);                         // wait for .05 seconds
-  digitalWrite(8, HIGH);  // turn the Blue LED on (HIGH is the voltage level)
-    delay(500);                        // wait for .5 seconds
-  digitalWrite(8, LOW);   // turn the Blue LED off by making the voltage LOW
-    delay(50);                         // wait for .05 seconds
+  digitalWrite(G, HIGH); // sets the non-button-pressed behavior to be a static green light
+  buttonState = digitalRead(3); // reads for input from the button; will be HIGH when pressed and LOW when not pressed.
+  if (buttonState == HIGH) { // if button is pressed, will fade out green.
+  for(int i = 255; i >= 0; i--){ // Fades green LED all the way out
+      analogWrite(G, i); // Sets green LED's brightness to current step in for loop
+      delay(1); // controls speed of fade out
+    }
+  }
+  while(buttonState == HIGH) { // While the button is pressed, a pink light will fade on and off in place of the static green light
+  digitalWrite(G, LOW); // While the button is pressed, this ensures the green LED will stay off
+  for(int i = 0; i < 256; i++) { // Fades in a pink light to full brightness
+      analogWrite(R, i); // Sets red LED's brightness to current step in for loop
+      analogWrite(B, .5 * i); // Sets the blue LED's brightness to half the brightness of the red LED
+      delay(3); // This delay controls the speed of the fade in
+    }
+  for(int i = 255; i >= 0; i--){ // Fades pink light all the way out
+      analogWrite(R, i); // Sets red LED's brightness to current step in for loop
+      analogWrite(B, .5 * i); // // Sets the blue LED's brightness to half the brightness of the Red LED
+      delay(3); // This delay controls the speed of the fade out
+  }
+    buttonState = digitalRead(3); // Re-checks if button is still pressed
+    if(buttonState == LOW){ // If the button is no longer pressed, will fade in the green LED
+      for(int i = 0; i < 256; i++){  // Fades in green LED to full brightness
+        analogWrite(G, i); // sets Green LED's brightness to current step in for loop
+        delay(1); // controls speed of fade in
+      }
+    }
+    delay(5); // creates small delay between each loop
+  }
 }
