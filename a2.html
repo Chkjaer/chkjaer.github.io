@@ -21,8 +21,7 @@
       <h2>Schematics</h2>
         <img src="A2FADE!/images/Frame 2.png">
       <h3>Resistance calculations:</h3>
-      <p>For the button, I used a pull-down resistor so we have a very low   current when the button isn't pressed<p>
-      <p>With 5v power, I used a 10K Ohm resistor to get a very low current of .5 mA. This will ensure pin 2 reads LOW when the button is not pressed.</p>
+      <p>For the button, I used a pull-down resistor so we have a very low   current when the button isn't pressed. With 5v power, I used a 10K Ohm resistor to get a very low current of .5 mA. This will ensure pin 2 reads LOW when the button is not pressed.</p>
       <br>
       <p>Red and Green LED: 5v Power - 1.8v drop = 3.2v = .02 Amps x Resistance</p>
       <p>Resistance = 3.2v / .02 Amps = 160 Ohms -> Use a 220 Ohm resistor</p>
@@ -41,10 +40,14 @@
   <div class="Questions">
     <h2>Questions</h2>
     <div class="Graph">
-      <h3>Graph</h3>
+      <h3>1: Draw a chart where the X axis is time and the Y axis is voltage. Draw 3 lines representing the voltage across an LED with analogWrite(led, 64), analogWrite(led, 128), and analogWrite(led,255).</h3>
       <img src="A2FADE!/images/Graph.jpg">
     </div>
+    <br>
     <h3>2: Given your schematic, circuit, and firmware, assuming the only thing that draws current is your LEDs, how long would your circuit run if powered by a 1200 mAh battery?</h3>
+    <p>My circuit would last for about 80 hours. The red LED will use twice the current of the Blue LED, so we can think of the current when on as 20mA through red and 10mA through blue, giving us a total of 30mAh. Since the LEDs are fading, we can half this current draw, giving us an average of 15mA/hr.
+      Looking at a battery with 1200mAh, we can divide this by our average rate of 15 mAh, giving us 80 hours of fading.
+    </p>
   </div>
   <br>
   <div class="CodeSnippet">
