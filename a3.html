@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>Christian Kjaer's HCDE 439 A1 Blink!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>Input Output! Assignment 3</h1>
+    <div class="header">
+      <h2>Here is my Input Output A3!<h2>
+    </div>
+    <div class="gif">
+      <img src="A3/trim.CF2C0847-4946-4B56-8761-C54336717166.GIF">
+    </div>
+    <br>
+    <div class="Schematics">
+      <h2>Schematics</h2>
+      <img src="A3/Frame 2 (1).png" />
+      <h3>Resistance calculations:</h3>
+      <p>Red and Green LED: 5v Power - 1.8v drop = 3.2v = .02 Amps x Resistance</p>
+      <p>Resistance = 3.2v / .02 Amps = 160 Ohms -> Use a 220 Ohm resistor</p>
+      <p></p>
+      <br>
+      <h3> Values being read at the voltage divider </h3>
+      <p>
+        Pin A0 = Vout = Vin x R2/ (R1 + R2)
+        <br>
+        <h4> Resistors: </h4>
+        Fixed Resistor = R1 = 10k Ohms (chosen to balance out variable resistor)
+        <br>
+        Photo Resistor = R2
+        <br>
+           At bright light ≈ 1k Ohms
+          <br>
+          ->Vout = 5V x (1k ohms / (10k + 1k)) ≈ .45V
+            <br>
+           At dim light ≈ 10K Ohms
+          <br> 
+          ->Vout = 5V x (10k ohms / (10k + 10k)) ≈ 2.5V
+            <br>
+           At very Dim light ≈ 100k Ohms
+          <br>
+          ->Vout = 5V x (100k ohms / (100k + 10k)) ≈ 4.55v
+          </p>
+      <p></p>
+    <br>
+    </div>
+    <div class="Circuit">
+      <h2>Circuit</h2>
+      <img src="A3/A4 - 1.png" />
+    </div>
+    <br>
+  </div>
+  <div class="Questions">
+    <h2>Questions</h2>
+    <h3>1: In your voltage divider, can the variable resistor be either R1 or R2 or does it need to be one or the other? Justify your answer with example calculations.</h3>
+    <p>The variable resistor can be either, but this will change what the reading at that point. With my variable resistor in the R2 position, a high reading indicates a dark room. See voltage calculations above.</p>
+
+  </div>
+  <br>
+  <div class="CodeSnippet">
+    <h2>Code Snippet</h2>
+    <pre>
+      int sensorValue = 0; // initializes global sensor value variable
+      int outputValue = 0; // initializes global output value variable
+      int sensorMax = 0; // initializes global sensor max variable, will change after calibration
+      int sensorMin = 0; // initializes global sensor min variable, will not change with calibration
+      
+      void setup() { 
+        pinMode(9, OUTPUT); // initializes pin 9 as an output, representing the Red LED
+        pinMode(10, OUTPUT); // initializes pin 10 as an output, representing the Green LED
+        Serial.begin(9600); // Starts the serialization with a baud rate of 9600
+        while (millis() < 5000) { // calibrates photoresistor sensor max and min for the first 5 seconds
+          sensorValue = analogRead(A0); // checks the voltage measurement between photo resistor and second resistor.
+          if (sensorValue > sensorMax) { // if sensor reading is higher than current max reading
+            sensorMax = sensorValue; // set max reading to current reading
+          }
+          delay(10); // adds some time before sensor readings 
+          Serial.println("Calibrating..."); // Lets user know device is still calibrating
+        }
+        Serial.print("Sensor Max: "); // tells user the calibrated max sensor reading.
+        Serial.println(sensorMax);
+      }
+      
+      
+      void loop() {
+        sensorValue = constrain(analogRead(A0), sensorMin, sensorMax); // reads the analog in value and constrains it to the calibrated range:
+        outputValue = map(sensorValue, sensorMin, sensorMax, 0, 255); // maps out sensorValue from calibrated range to the range of the analog out:
+        analogWrite(9, outputValue); // Writes the appropriate value to Green LED, depending on sensor reading. The darker the light, the higher the reading, the more Red the LED is
+        int greenOutput = (255 - outputValue);
+        analogWrite(10, 255 - outputValue); // Writes the appropriate value to Green LED, depending on sensor reading. The darker the light, the higher the reading, the more Red the LED is
+        Serial.print(" Reading = ");   // print the results to the Serial Monitor:
+        Serial.print(sensorValue);
+        Serial.print(" | Red LED Output = ");
+        Serial.print(outputValue);
+        Serial.print(" | Green LED Output = ");
+        Serial.println(greenOutput);
+        delay(10); // adds delay for more accurate sensor readings
+      }
+    </pre>
+  </div>
+  <h3>Sample Output</h3>
+  <img src="A3/Screenshot 2025-01-27 152435.png" />
+  <br>
+  <img src="A3/Screenshot 2025-01-27 145541.png" />
+  </body>
+</html>
