@@ -37,8 +37,105 @@
   </div>
   <div class="Questions">
     <h2>Questions</h2>
-    
+    <h3>1: Say you are using a servo motor you attach to pin 9. In your loop() you have the following code:
+      for (int i=0, i<180, i++){servo.write(i); delay(100);}
+      <br> Draw a graph with the X axis in seconds, for two seconds, and the y-axis the voltage at pin 9 with respect to ground.</h3>
+    <figure>
+      <img src="A4/Question 1 Graph.png">
+      <figcaption> My graph shows the voltage across the pin attached to the servo vs. time for 2 seconds.</figcaption>
+    </figure>
+    <br>
+    <h3> 2: Your input device is slightly broken, leading it to give us an erroneous reading 1% of the time. How can we address this? Answer in (pseudo)code.</h3>
+    <p>Since we are only having erroneous readings 1% of the time, we can take the measurement three times at each scan time to check that they are all consistent. Upon comparing them, if we do have an erroneous result 1% of the time, it will likely be solved for by the two other values matching</p>
+    <pre>
+      long r1 = cs_4_2.capacitiveSensor(30);
+      long r2 = cs_4_2.capacitiveSensor(30);
+      long r3 = cs_4_2.capacitiveSensor(30); // Take three readings one after the other
+  
+      
+      if (r1 == r2 || r1 == r3) return r1; 
+      if (r2 == r3) return r2; // If two values match, return that value
+  
+      return (r1 + r2 + r3) / 3; //if all values are different, will return the average of all three values
+    </pre>
   <br>
+    <h3> 3: Your input device is slightly noisy, leading the measurement to randomly deviate from the true measurement up or down by 10%. How can we address this? Answer in (pseudo)code.</h3>
+    <p>Similar to the last answer, taking multiple measurements and then averaging them out could help smooth the data. However, since this is more than a 1% error I want to take more samples, with some tiny delays in between them.</p>
+    <pre>
+      const int numSamples = 5; // number of readings to average
+      long total = 0; initializes total variable to represent summation of readings before being averaged
+
+      for (int i = 0; i < numSamples; i++) { // Loops to take as many readings as declared in numSamples
+        total += cs_4_2.capacitiveSensor(30);  // Takes a reading and adds it to the total
+        delay(5);  // Small delay between readings to reduce fluctuations
+      }
+
+  return total / numSamples;  // Return the averaged reading</pre>
   <div class="CodeSnippet">
     <h2>Code Snippet</h2>
+    <pre>
+        #include <Servo.h>
+        #include <CapacitiveSensor.h>
+        
+        int currentAng = 0; // initializes current Angle representing the Servos current position
+        int sensorMin = 5000; // initalizes minimum sensor reading, set to an arbitrary high number which will be reduced down to the lowest detected reading from the sensor during calibration
+        int sensorMax = 0; // initalizes maximum sensor reading, which will be increased up to the highest detected reading from the sensor during calibration
+        int activationThreshold = 0; // initializes the threshold for sensor values that activate the servo or not, representing the average of the sensor max and sensor min post calibration
+        CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);    	// 1 megohm resistor between pins 4 & 2, pin 2 is sensor pin, add wire, metal thing
+        
+        Servo myServo;  // create a servo object
+        
+        void setup() {
+          myServo.attach(10); // attaches the servo on pin 10 to the servo object
+          cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF); 	// turn off autocalibrate on channel 1 - just as an example *FROM SLIDES, NOT SURE WHAT THIS DOES*
+          Serial.begin(9600); // Starts serialization with baud rate of 9600
+          
+        
+          while (millis() < 5000) { // calibrates photoresistor sensor max and min for the first 5 seconds
+            long start = millis(); // starts milliseconds timer to be used for performance debugging
+            long sensorValue =  cs_4_2.capacitiveSensor(30); // takes a reading
+            // Serial.print(millis() - start);    	// check on performance in milliseconds, for debugging
+            // Serial.print("\t");             // tab character for debug window spacing
+            // Serial.println(sensorValue);         // outputs the sensor reading for debugging
+            if (sensorValue > sensorMax) { // if sensor reading is higher than current max reading
+              sensorMax = sensorValue; // set max reading to current reading
+            }
+            if (sensorValue < sensorMin) { // if sensor reading is lower than current max reading
+              sensorMin = sensorValue; // set min reading to current reading
+            }
+          delay(10); // adds small delay between sensor readings 
+          Serial.println("Calibrating... TOUCH CAPACITIVE SENSOR RAPIDLY"); // Lets user know device is still calibrating, and that they should touch it repeatedly to help it calibrate high and low readings.
+          }
+          Serial.print("Sensor Max: "); // tells user the calibrated max sensor reading.
+          Serial.print(sensorMax); 
+          Serial.print("\t");
+          Serial.print("Sensor Min: "); // tells user the calibrated min sensor reading.
+          Serial.println(sensorMin); 
+          activationThreshold = (sensorMax + sensorMin) / 2; // sets the reading at which the servo will activate at, derived from the average of the sensor max and sensor min post calibration
+          Serial.print("Activation Threshold: "); // tells the user the activationThreshold
+          Serial.println(activationThreshold);
+        }
+        
+        
+        void loop() {
+          long start = millis(); // starts milliseconds timer to be used for performance debugging
+          long sensorValue =  cs_4_2.capacitiveSensor(30); // takes a capacitive touch sensor reading 
+        
+          // Serial.print(millis() - start);    	// check on performance in milliseconds, for debugging
+          // Serial.print("\t");                	// tab character for debug window spacing
+          // Serial.println(sensorValue);         // outputs the sensor reading for debugging
+        
+          while (sensorValue > activationThreshold && currentAng < 180) { // while the sensor reading is above the activation threshold and hasn't reached the servos max angle, it will increment the servos angle being written to it
+            currentAng++;
+            myServo.write(currentAng); // 
+          }
+          
+          while (sensorValue < activationThreshold && currentAng > 0) { // while the sensor reading is below the activation threshold and hasn't reached the servos min angle, it will deincrement the servos angle being written to it
+            currentAng--;
+            myServo.write(currentAng);
+          }
+          delay(10);                         	// arbitrary delay to limit data to serial port
+        }
+        
+    </pre>
     
