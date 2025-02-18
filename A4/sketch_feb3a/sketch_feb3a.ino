@@ -45,7 +45,7 @@ void loop() {
 	// Serial.print("\t");                	// tab character for debug window spacing
 
 	// Serial.println(total1);    
-  while (total1 > ((sensorMax + sensorMin) / 2) && currentAng < 180) {
+  while (total1 > ((sensorMax + sensorMin) / 2) && currentSpeed < 255) {
     currentAng = currentAng + 1;
     myServo.write(currentAng);
   }

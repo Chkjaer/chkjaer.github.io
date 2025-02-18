@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+    <title>Christian Kjaer's HCDE 439 A5 High(er) Voltage and Transistors!</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>High(er) Voltage and Transistors Assignment 5</h1>
+    <div class="header">
+      <h2>Here is my High(er) Voltage and Transistors A5!<h2>
+    </div>
+    <figure>
+      <img src="A5/CircuitBehavior.gif">
+      <figcaption>A sample of my circuits behavior</figcaption>
+    </figure>
+    </div>
+    <br>
+    <div class="Schematics">
+      <h2>Schematics</h2>
+      <img src="A5/A5 Schematic.png" />
+      <h3>Resistance and Current calculations:</h3>
+      <p>For the Capacitive touch sensor, we want an extremely large resistance so that our sensor is extra sensitive, so I went with the 3 x 1M ohm resistors. This is because we are measuring the time taken for the recieving pin to change state, and the higher the resistance, the slower it changes state, leading to more useful readings.
+    </p>
+    <br><br>
+    <p>For the Current across the transistor, we can calculate the current by considering our voltage and resistance.
+        White LEDS ~3.3 voltage drop
+        3 x 3.3 = 9.9
+        Power supply 12v, so 2.1v drop across resistor
+        Resistor marked 241, so 24x10=240 ohms
+        2.1/240 = 0.00875A, 8.75mA per segment
+        16.4 ft of LEDs with 5 segments per foot.
+        16.4 ft x 5 segments x 8.75mA = 717.5 mA.
+        Therefore, 717.5mA is the max current across the transistor
+        </p>
+    <br>
+    </div>
+    <figure>
+      <h2>Circuit</h2>
+      <img src="A5/A5 Circuit.png" />
+      <figcaption>My circuit sends a signal through a large resistor and any metal that can be used as a capacitive touch sensor, (here I used a key), and then measures the time taken to recieve the signal.
+        Then a LED strip is connected to power and a N-MOSFET transistor that will control the current to ground, adjusting flow control from a PWM pin which writes to the transistor based on the capacitance . </figcaption>
+    </figure>
+    <br>
+  </div>
+  <div class="Questions">
+    <h2>Questions</h2>
+    1: This is the datasheet for the n-mosfet transistor: https://www.diodes.com/assets/Datasheets/DMT6009LCT.pdf Links to an external site. 
+    What is the absolute maximum amount of current between pins 2 and 3?
+    
+    2: Draw a schematic for a circuit with using at least your arduino, a DC motor, a flyback diode, and capacitors between power and ground. Find parts with datasheets you could use for each of these schematic components.
+
+    3: Here is the datasheet for the L293D chip: https://www.ti.com/product/L293DLinks to an external site.
+    Draw a schematic using at least your arduino, this chip, and two motors. Write (pseudo) code that shows how you would move the motors both forward, both back, then one forward one back, and one back then forward.</pre>
+  <br>
+  <div class="CodeSnippet">
+    <h2>Code Snippet</h2>
+    <pre>
+        #include <CapacitiveSensor.h>
+            int currentBrightness = 0;
+            int targetBrightness = 0;
+            int sensorMin = 5000; // arbitrary high number
+            int sensorMax = 0;
+            CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);    	// 1 megohm resistor between pins 4 & 2, pin 2 is sensor pin, add wire, metal thing
+            
+            void setup() {
+              pinMode(9, OUTPUT); // attaches the servo on pin 9 to the servo object
+              cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF); 	// turn off autocalibrate on channel 1 - just as an example
+              Serial.begin(9600);
+            
+             while (millis() < 5000) { // calibrates photoresistor sensor max and min for the first 5 seconds
+              long start = millis();
+                 long total1 =  cs_4_2.capacitiveSensor(30);
+              
+                 // Serial.print(millis() - start);    	// check on performance in milliseconds
+                // Serial.print("\t");             
+                      int sensorValue = total1; // checks the voltage measurement between photo resistor and second resistor.
+                      if (sensorValue > sensorMax) { // if sensor reading is higher than current max reading
+                        sensorMax = sensorValue; // set max reading to current reading
+                      }
+                      if (sensorValue < sensorMin) {
+                        sensorMin = sensorValue;
+                      }
+                      delay(10); // adds some time before sensor readings 
+                      Serial.println("Calibrating... TOUCH RAPIDLY"); // Lets user know device is still calibrating
+                    }
+              Serial.print("Sensor Max: "); // tells user the calibrated max sensor reading.
+              Serial.print(sensorMax);
+              Serial.print("\t");
+              Serial.print("Sensor Min: "); // tells user the calibrated max sensor reading.
+              Serial.println(sensorMin);
+            }
+            
+            
+            void loop() {
+                long start = millis();
+                long total1 =  cs_4_2.capacitiveSensor(30);
+                // Serial.print(millis() - start);    	// check on performance in milliseconds
+                // Serial.print("\t");                	// tab character for debug window spacing 
+              targetBrightness = map(total1, sensorMin, sensorMax, 0, 255);
+              targetBrightness = constrain(targetBrightness, 0, 255);
+              Serial.println(targetBrightness);   
+              if (targetBrightness < 25) {
+                targetBrightness = 0;
+              } else if (targetBrightness > 190) {
+                targetBrightness = 255;
+              }
+              while (currentBrightness < targetBrightness) {
+                  currentBrightness++;
+                  analogWrite(9, currentBrightness);
+                  delay(3);
+              }
+              while (currentBrightness > targetBrightness) {
+                  currentBrightness--;
+                  analogWrite(9, currentBrightness);
+                  delay(3);
+              }
+              analogWrite(9, currentBrightness);
+              delay(20); // arbitrary delay to limit data to serial port
+            }                      	
+            
+    </pre>
+    
