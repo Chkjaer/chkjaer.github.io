@@ -25,14 +25,17 @@
     </p>
     <br><br>
     <p>For the Current across the transistor, we can calculate the current by considering our voltage and resistance.
-        White LEDS ~3.3 voltage drop
-        3 x 3.3 = 9.9
-        Power supply 12v, so 2.1v drop across resistor
-        Resistor marked 241, so 24x10=240 ohms
-        2.1/240 = 0.00875A, 8.75mA per segment
-        16.4 ft of LEDs with 5 segments per foot.
-        16.4 ft x 5 segments x 8.75mA = 717.5 mA.
-        Therefore, 717.5mA is the max current across the transistor
+        <pre>
+            White LEDS ~3.3 voltage drop
+            3 x 3.3 = 9.9
+            Power supply 12v, so 2.1v drop across resistor
+            Resistor marked 241, so 24x10=240 ohms
+            2.1/240 = 0.00875A, 8.75mA per segment
+            16.4 ft of LEDs with 5 segments per foot.
+            16.4 ft x 5 segments x 8.75mA = 717.5 mA.
+            </pre>
+        <p>Therefore, 717.5mA is the max current across the transistor. 
+            This is fine considering the N-MOSFET data sheet shows this transistor can handle current up to 220A.</p>
         </p>
     <br>
     </div>
@@ -48,11 +51,47 @@
     <h2>Questions</h2>
     1: This is the datasheet for the n-mosfet transistor: https://www.diodes.com/assets/Datasheets/DMT6009LCT.pdf Links to an external site. 
     What is the absolute maximum amount of current between pins 2 and 3?
+    According to this datasheet, the maximum current through the drain is 37.2 A, however the highest amount of current that can safely flow throauh a n-MOSFET's internal body diode before causing damage is 80 A.
     
     2: Draw a schematic for a circuit with using at least your arduino, a DC motor, a flyback diode, and capacitors between power and ground. Find parts with datasheets you could use for each of these schematic components.
+    <figure>
+        <img src="A5/Question 2 Schematic.png">
+    </figure>
+    <p> DC Motor: https://cdn.sparkfun.com/datasheets/Robotics/RP6%20motor%20TFK280SC-21138-45.pdf
+        Flyback diode: https://www.ti.com/lit/ds/symlink/lm5180-q1.pdf?ts=1739844289471&ref_url=https%253A%252F%252Fwww.google.com%252F 
+        Capacitor:https://www.mouser.com/datasheet/2/293/e_gxc-3472314.pdf </p>
 
-    3: Here is the datasheet for the L293D chip: https://www.ti.com/product/L293DLinks to an external site.
-    Draw a schematic using at least your arduino, this chip, and two motors. Write (pseudo) code that shows how you would move the motors both forward, both back, then one forward one back, and one back then forward.</pre>
+    3: Here is the datasheet for the L293D chip: https://www.ti.com/product/L293D Links to an external site.
+    Draw a schematic using at least your arduino, this chip, and two motors. Write (pseudo) code that shows how you would move the motors both forward, both back, then one forward one back, and one back then forward.
+    <figure>
+        <img src="A5/Question 3 Schematic.png">
+    </figure>
+        <pre>
+            Loop {
+                digitalWrite(1, HIGH); // enable motor 1
+                digitalWrite(2, HIGH); // enable motor 2
+                digitalWrite(5, HIGH); 
+                digitalWrite(6, LOW); // Moves motor 1 forward
+                digitalWrite(10, HIGH);
+                digitalWrite(11, LOW); // Moves motor 2 forward
+                delay(1000); // wait one second 
+                digitalWrite(5, LOW); 
+                digitalWrite(6, HIGH); // Moves motor 1 backward
+                digitalWrite(10, LOW);
+                digitalWrite(11, HIGH); // Moves motor 2 backward
+                delay(1000); // wait one second
+                digitalWrite(5, LOW); 
+                digitalWrite(6, HIGH); // Moves Motor 
+                digitalWrite(10, LOW);
+                digitalWrite(11, HIGH);
+                delay(1000) // wait one second
+                digitalWrite(5, LOW);
+                digitalWrite(6, HIGH);
+                digitalWrite(10, LOW);
+                digitalWrite(11, HIGH);
+            }
+        </pre>
+</pre>
   <br>
   <div class="CodeSnippet">
     <h2>Code Snippet</h2>
@@ -62,25 +101,25 @@
             int targetBrightness = 0;
             int sensorMin = 5000; // arbitrary high number
             int sensorMax = 0;
-            CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);    	// 1 megohm resistor between pins 4 & 2, pin 2 is sensor pin, add wire, metal thing
+            CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);    	// 3 megohm resistor between pins 4 & 2, pin 2 is sensor pin, add wire, metal thing
             
             void setup() {
-              pinMode(9, OUTPUT); // attaches the servo on pin 9 to the servo object
+              pinMode(9, OUTPUT); // attaches the transistor gate limiting current from the LED to pin 9 on Arduino
               cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF); 	// turn off autocalibrate on channel 1 - just as an example
               Serial.begin(9600);
             
-             while (millis() < 5000) { // calibrates photoresistor sensor max and min for the first 5 seconds
+             while (millis() < 5000) { // calibrates capactive sensor max and min for the first 5 seconds
               long start = millis();
-                 long total1 =  cs_4_2.capacitiveSensor(30);
+                 long total1 =  cs_4_2.capacitiveSensor(30); Takes reading of the capacitive sensor
               
                  // Serial.print(millis() - start);    	// check on performance in milliseconds
                 // Serial.print("\t");             
-                      int sensorValue = total1; // checks the voltage measurement between photo resistor and second resistor.
-                      if (sensorValue > sensorMax) { // if sensor reading is higher than current max reading
+                      int sensorValue = total1; // stores the reading from the Capacitive sensor.
+                      if (sensorValue > sensorMax) { // if sensor reading is higher than current maximum reading
                         sensorMax = sensorValue; // set max reading to current reading
                       }
-                      if (sensorValue < sensorMin) {
-                        sensorMin = sensorValue;
+                      if (sensorValue < sensorMin) { // if sensor reading is higher than current minimum reading
+                        sensorMin = sensorValue; // set min reading to current reading
                       }
                       delay(10); // adds some time before sensor readings 
                       Serial.println("Calibrating... TOUCH RAPIDLY"); // Lets user know device is still calibrating
@@ -98,25 +137,25 @@
                 long total1 =  cs_4_2.capacitiveSensor(30);
                 // Serial.print(millis() - start);    	// check on performance in milliseconds
                 // Serial.print("\t");                	// tab character for debug window spacing 
-              targetBrightness = map(total1, sensorMin, sensorMax, 0, 255);
-              targetBrightness = constrain(targetBrightness, 0, 255);
-              Serial.println(targetBrightness);   
-              if (targetBrightness < 25) {
+              targetBrightness = map(total1, sensorMin, sensorMax, 0, 255); //maps the read signal, using the calibrated sensor range mapping onto a 0-255 range compatible with analogWrite
+              targetBrightness = constrain(targetBrightness, 0, 255); // Constrains the value, incase it reads out of range after mapping.
+              Serial.println(targetBrightness);   // prints targetBrightness to serial monitor for debuging 
+              if (targetBrightness < 25) {  // Creates Threshold for target brightness, so that low readings do not make the LED strip flicker.
                 targetBrightness = 0;
-              } else if (targetBrightness > 190) {
+              } else if (targetBrightness > 190) { // Creates Threshold for target brightness, so that high readings do not make the LED strip flicker.
                 targetBrightness = 255;
               }
-              while (currentBrightness < targetBrightness) {
+              while (currentBrightness < targetBrightness) { // fades the LED up to the target brightness
                   currentBrightness++;
-                  analogWrite(9, currentBrightness);
-                  delay(3);
+                  analogWrite(9, currentBrightness); 
+                  delay(3); // Controls the speed of the fade
               }
-              while (currentBrightness > targetBrightness) {
+              while (currentBrightness > targetBrightness) { // fades the LED down to the target brightness
                   currentBrightness--;
                   analogWrite(9, currentBrightness);
-                  delay(3);
+                  delay(3); // Controls the speed of fade
               }
-              analogWrite(9, currentBrightness);
+              analogWrite(9, currentBrightness); // edge case incase currentbrightness is equal to target brightness.
               delay(20); // arbitrary delay to limit data to serial port
             }                      	
             
