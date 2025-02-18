@@ -43,26 +43,28 @@
       <h2>Circuit</h2>
       <img src="A5/A5 Circuit.png" />
       <figcaption>My circuit sends a signal through a large resistor and any metal that can be used as a capacitive touch sensor, (here I used a key), and then measures the time taken to recieve the signal.
-        Then a LED strip is connected to power and a N-MOSFET transistor that will control the current to ground, adjusting flow control from a PWM pin which writes to the transistor based on the capacitance . </figcaption>
+        Then a LED strip is connected to power and a N-MOSFET transistor that will control the current to ground, adjusting flow control from a PWM pin which writes to the transistor based on the capacitance. </figcaption>
     </figure>
     <br>
   </div>
   <div class="Questions">
     <h2>Questions</h2>
-    1: This is the datasheet for the n-mosfet transistor: https://www.diodes.com/assets/Datasheets/DMT6009LCT.pdf Links to an external site. 
-    What is the absolute maximum amount of current between pins 2 and 3?
-    According to this datasheet, the maximum current through the drain is 37.2 A, however the highest amount of current that can safely flow throauh a n-MOSFET's internal body diode before causing damage is 80 A.
-    
-    2: Draw a schematic for a circuit with using at least your arduino, a DC motor, a flyback diode, and capacitors between power and ground. Find parts with datasheets you could use for each of these schematic components.
+    <h3>1: This is the datasheet for the n-mosfet transistor: https://www.diodes.com/assets/Datasheets/DMT6009LCT.pdf Links to an external site. 
+        What is the absolute maximum amount of current between pins 2 and 3?</h3>
+    <p>According to this datasheet, the maximum current through the drain is 37.2 A, however the highest amount of current that can safely flow throauh a n-MOSFET's internal body diode before causing damage is 80 A.</p>
+    <br>
+    <h3>2: Draw a schematic for a circuit with using at least your arduino, a DC motor, a flyback diode, and capacitors between power and ground. Find parts with datasheets you could use for each of these schematic components.</h3>
     <figure>
         <img src="A5/Question 2 Schematic.png">
     </figure>
     <p> DC Motor: https://cdn.sparkfun.com/datasheets/Robotics/RP6%20motor%20TFK280SC-21138-45.pdf
+        <br>
         Flyback diode: https://www.ti.com/lit/ds/symlink/lm5180-q1.pdf?ts=1739844289471&ref_url=https%253A%252F%252Fwww.google.com%252F 
-        Capacitor:https://www.mouser.com/datasheet/2/293/e_gxc-3472314.pdf </p>
-
-    3: Here is the datasheet for the L293D chip: https://www.ti.com/product/L293D Links to an external site.
-    Draw a schematic using at least your arduino, this chip, and two motors. Write (pseudo) code that shows how you would move the motors both forward, both back, then one forward one back, and one back then forward.
+        <br>
+        Capacitor: https://www.mouser.com/datasheet/2/293/e_gxc-3472314.pdf </p>
+    <br>
+    <h3> 3: Using the datasheet for the L293D chip: https://www.ti.com/product/L293D, 
+        Draw a schematic using at least your arduino, this chip, and two motors. Write (pseudo) code that shows how you would move the motors both forward, both back, then one forward one back, and one back then forward.</h3>
     <figure>
         <img src="A5/Question 3 Schematic.png">
     </figure>
@@ -80,15 +82,15 @@
                 digitalWrite(10, LOW);
                 digitalWrite(11, HIGH); // Moves motor 2 backward
                 delay(1000); // wait one second
-                digitalWrite(5, LOW); 
-                digitalWrite(6, HIGH); // Moves Motor 
+                digitalWrite(5, HIGH); 
+                digitalWrite(6, LOW); // Moves Motor 1 forward
                 digitalWrite(10, LOW);
-                digitalWrite(11, HIGH);
+                digitalWrite(11, HIGH); // Moves Motor 2 backward
                 delay(1000) // wait one second
-                digitalWrite(5, LOW);
-                digitalWrite(6, HIGH);
-                digitalWrite(10, LOW);
-                digitalWrite(11, HIGH);
+                digitalWrite(5, LOW); 
+                digitalWrite(6, HIGH); // Moves Motor 1 backward
+                digitalWrite(10, HIGH);
+                digitalWrite(11, LOW); // Moves Motor 2 forward
             }
         </pre>
 </pre>
