@@ -57,7 +57,9 @@
     <figure>
         <img src="A5/Question 2 Schematic.png">
     </figure>
-    <p> DC Motor: https://cdn.sparkfun.com/datasheets/Robotics/RP6%20motor%20TFK280SC-21138-45.pdf
+    <p> N-MOSFET transistor: https://www.diodes.com/assets/Datasheets/DMT6009LCT.pdf
+        <br>
+        DC Motor: https://cdn.sparkfun.com/datasheets/Robotics/RP6%20motor%20TFK280SC-21138-45.pdf
         <br>
         Flyback diode: https://www.ti.com/lit/ds/symlink/lm5180-q1.pdf?ts=1739844289471&ref_url=https%253A%252F%252Fwww.google.com%252F 
         <br>
@@ -98,7 +100,7 @@
   <div class="CodeSnippet">
     <h2>Code Snippet</h2>
     <pre>
-        #include <CapacitiveSensor.h>
+        #include &lt;CapacitiveSensor.h&gt
             int currentBrightness = 0;
             int targetBrightness = 0;
             int sensorMin = 5000; // arbitrary high number
