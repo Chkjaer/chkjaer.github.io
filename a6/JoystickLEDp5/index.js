@@ -1,5 +1,12 @@
-const BAUD_RATE = 9600;
-let port;
+// Christian Kjaer
+// HCDE 439 
+// A6 Talking to the Web!
+// Code Attribution ~ Used the Ball p5 example as a starting framework, and used ChatGPT4o to help debug the draw function
+
+const BAUD_RATE = 9600; // Baud rate must match the arduino sketch
+
+// Declare global variables
+let port; 
 let connectBtn, sendBtn;
 let targetSpeed = 500;
 let targetBrightness = 128;
@@ -7,16 +14,18 @@ let serialBuffer = ""; // Store incoming serial data
 
 function setup() {
   setupSerial();
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(windowWidth, windowHeight); // Create a canvas that is the size of our browser window.
+  // windowWidth and windowHeight are p5 variables
 
+  // Creates a button that sends the current speed and brightness values to the Arduino connected with the LED
   sendBtn = createButton("Send to Arduino");
   sendBtn.position(5, 35);
   sendBtn.mouseClicked(sendToArduino);
 }
 
-function draw() {
-  const portIsOpen = checkPort();
-  if (!portIsOpen) return;
+function draw() { // Loops to read joystick values and converts them to appropriate values to control LED behavior. *Used ChatGPT to help debug this function*
+  const portIsOpen = checkPort(); // Check whether the port is open (see checkPort function below)
+  if (!portIsOpen) return; 
 
   // Read data from the serial port, append to buffer
   let newData = port.read();
@@ -24,69 +33,77 @@ function draw() {
     serialBuffer += newData; // Append incoming data
   }
 
-  // If a full message (newline) is received, process it
-  if (serialBuffer.includes("\n")) {
+  if (serialBuffer.includes("\n")) { // If a new joystick reading is received, process it,
     let lines = serialBuffer.split("\n"); // Split into full lines
     serialBuffer = lines.pop(); // Keep unfinished data for next read
 
     try {
       let arr = JSON.parse(lines[0]); // Parse first complete JSON line
-      if (Array.isArray(arr) && arr.length === 2) {
-        let xVal = arr[0];
-        let yVal = arr[1];
+      if (Array.isArray(arr) && arr.length === 2) { // checks for valid JSON
+        let xVal = arr[0]; // extracts xVal from array
+        let yVal = arr[1]; // extracts yVal from array
 
-        // Map joystick values to LED speed & brightness
-        targetSpeed = Math.round(map(xVal, 0, 1023, 1000, 10));
-        targetBrightness = Math.round(map(yVal, 0, 1023, 255, 0));
+        targetSpeed = Math.round(map(xVal, 0, 1023, 1000, 10)); // Map joystick values to LED speed, with smaller values (leftward direction of joystick) correlating to a larger delay between blinks
+        targetBrightness = Math.round(map(yVal, 0, 1023, 255, 0)); //Map Joystick values to LED brightness, with smaller values (upward direction of joystick) correlating to a higher brightness
 
+        // Display current Joystick input values and what they mean for the LED behavior
         background(220);
         textSize(20);
         fill(0);
         text(`\n Joystick X input: ${xVal} → LED Blinkspeed: ${targetSpeed} ms`, 20, 50);
         text(`\n Joystick Y input: ${yVal} → LED Brightness: ${targetBrightness} / 255`, 20, 80);
       }
-    } catch (e) {
+    } catch (e) { // error handling incase of invalid JSON
       console.error("Invalid JSON received:", lines[0]);
     }
   }
 }
 
-// Function to send LED speed & brightness as an array
-function sendToArduino() {
+function sendToArduino() { // Function to send LED speed & brightness as an array
   let data = [targetSpeed, targetBrightness]; // Create array
   port.write(JSON.stringify(data) + "\n"); // Convert to JSON & send over Serial
 }
 
+// Three helper functions for managing the serial connection.
 // Serial setup
 function setupSerial() {
-  port = createSerial();
-  let usedPorts = usedSerialPorts();
-  if (usedPorts.length > 0) {
-    port.open(usedPorts[0], BAUD_RATE);
-  }
+    port = createSerial();
 
-  connectBtn = createButton("Connect to Arduino");
-  connectBtn.position(5, 5);
-  connectBtn.mouseClicked(onConnectButtonClicked);
-}
-
-// Check if serial port is open
-function checkPort() {
-  if (!port.opened()) {
-    connectBtn.html("Connect to Arduino");
-    background("gray");
-    return false;
-  } else {
-    connectBtn.html("Disconnect");
-    return true;
+    // Check to see if there are any ports we have used previously
+    let usedPorts = usedSerialPorts();
+    if (usedPorts.length > 0) {
+      // If there are ports we've used, open the first one
+      port.open(usedPorts[0], BAUD_RATE);
+    }
+  
+    // create a connect button
+    connectBtn = createButton("Connect to Arduino");
+    connectBtn.position(5, 5); // Position the button in the top left of the screen.
+    connectBtn.mouseClicked(onConnectButtonClicked); // When the button is clicked, run the onConnectButtonClicked function
   }
-}
-
-// Handle connect/disconnect button click
-function onConnectButtonClicked() {
-  if (!port.opened()) {
-    port.open(BAUD_RATE);
-  } else {
-    port.close();
+  
+  function checkPort() {
+    if (!port.opened()) {
+      // If the port is not open, change button text
+      connectBtn.html("Connect to Arduino");
+      // Set background to gray
+      background("gray");
+      return false;
+    } else {
+      // Otherwise we are connected
+      connectBtn.html("Disconnect");
+  
+      return true;
+    }
   }
+  
+  function onConnectButtonClicked() {
+    // When the connect button is clicked
+    if (!port.opened()) {
+      // If the port is not opened, we open it
+      port.open(BAUD_RATE);
+    } else {
+      // Otherwise, we close it!
+      port.close();
+    }
 }

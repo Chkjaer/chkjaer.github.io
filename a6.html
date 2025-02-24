@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+    <title>Christian Kjaer's HCDE 439 A5 High(er) Voltage and Transistors!</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>Talking to the web! Assignment 6</h1>
+    <div class="header">
+      <h2>Here is my Talking to the web A6!<h2>
+    </div>
+    <figure>
+      <img src="a6/CircuitBehavior.gif">
+      <figcaption>A sample of my circuits behavior</figcaption>
+    </figure>
+    </div>
+    <br>
+    <div class="Schematics">
+      <h2>Schematics</h2>
+      <img src="A6/Schematic.png" />
+      <h3>Resistance:</h3>
+      <p>Green LED: 5v Power - 1.8v drop = 3.2v = .02 Amps x Resistance</p>
+      <p>Resistance = 3.2v / .02 Amps = 160 Ohms -> Use a 220 Ohm resistor</p>
+    <br>
+    </div>
+    <figure>
+      <h2>Circuit</h2>
+      <img src="A6/a6circuitPicture.png" />
+      <figcaption>My circuit sends a signal through a large resistor and any metal that can be used as a capacitive touch sensor, (here I used a key), and then measures the time taken to recieve the signal.
+        Then a LED strip is connected to power and a N-MOSFET transistor that will control the current to ground, adjusting flow control from a PWM pin which writes to the transistor based on the capacitance. </figcaption>
+
+  <div class="CodeSnippet">
+    <h2>Code Snippet</h2>
+    <pre>
+        #include &lt;CapacitiveSensor.h&gt
+            int currentBrightness = 0;
+            int targetBrightness = 0;
+            int sensorMin = 5000; // arbitrary high number
+            int sensorMax = 0;
+            CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);    	// 3 megohm resistor between pins 4 & 2, pin 2 is sensor pin, add wire, metal thing
+            
+            void setup() {
+              pinMode(9, OUTPUT); // attaches the transistor gate limiting current from the LED to pin 9 on Arduino
+              cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF); 	// turn off autocalibrate on channel 1 - just as an example
+              Serial.begin(9600);
+            
+             while (millis() < 5000) { // calibrates capactive sensor max and min for the first 5 seconds
+              long start = millis();
+                 long total1 =  cs_4_2.capacitiveSensor(30); Takes reading of the capacitive sensor
+              
+                 // Serial.print(millis() - start);    	// check on performance in milliseconds
+                // Serial.print("\t");             
+                      int sensorValue = total1; // stores the reading from the Capacitive sensor.
+                      if (sensorValue > sensorMax) { // if sensor reading is higher than current maximum reading
+                        sensorMax = sensorValue; // set max reading to current reading
+                      }
+                      if (sensorValue < sensorMin) { // if sensor reading is higher than current minimum reading
+                        sensorMin = sensorValue; // set min reading to current reading
+                      }
+                      delay(10); // adds some time before sensor readings 
+                      Serial.println("Calibrating... TOUCH RAPIDLY"); // Lets user know device is still calibrating
+                    }
+              Serial.print("Sensor Max: "); // tells user the calibrated max sensor reading.
+              Serial.print(sensorMax);
+              Serial.print("\t");
+              Serial.print("Sensor Min: "); // tells user the calibrated max sensor reading.
+              Serial.println(sensorMin);
+            }
+            
+            
+            void loop() {
+                long start = millis();
+                long total1 =  cs_4_2.capacitiveSensor(30);
+                // Serial.print(millis() - start);    	// check on performance in milliseconds
+                // Serial.print("\t");                	// tab character for debug window spacing 
+              targetBrightness = map(total1, sensorMin, sensorMax, 0, 255); //maps the read signal, using the calibrated sensor range mapping onto a 0-255 range compatible with analogWrite
+              targetBrightness = constrain(targetBrightness, 0, 255); // Constrains the value, incase it reads out of range after mapping.
+              Serial.println(targetBrightness);   // prints targetBrightness to serial monitor for debuging 
+              if (targetBrightness < 25) {  // Creates Threshold for target brightness, so that low readings do not make the LED strip flicker.
+                targetBrightness = 0;
+              } else if (targetBrightness > 190) { // Creates Threshold for target brightness, so that high readings do not make the LED strip flicker.
+                targetBrightness = 255;
+              }
+              while (currentBrightness < targetBrightness) { // fades the LED up to the target brightness
+                  currentBrightness++;
+                  analogWrite(9, currentBrightness); 
+                  delay(3); // Controls the speed of the fade
+              }
+              while (currentBrightness > targetBrightness) { // fades the LED down to the target brightness
+                  currentBrightness--;
+                  analogWrite(9, currentBrightness);
+                  delay(3); // Controls the speed of fade
+              }
+              analogWrite(9, currentBrightness); // edge case incase current brightness is equal to target brightness.
+              delay(20); // arbitrary delay to limit data to serial port
+            }                      	
+            
+    </pre>
+    
