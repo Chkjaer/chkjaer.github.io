@@ -13,7 +13,7 @@
     </div>
     <figure>
       <img src="a6/CircuitBehavior.gif">
-      <figcaption>A sample of my circuits behavior</figcaption>
+      <figcaption> A sample of my circuits behavior. It takes input from a joystick, and then allows you to use that input to set the blinking speed and brightness of an LED. Up on the joystick will increase the brightness, and right on the joystick will increase the speed of blinking.</figcaption>
     </figure>
     </div>
     <br>
@@ -28,74 +28,186 @@
     <figure>
       <h2>Circuit</h2>
       <img src="A6/a6circuitPicture.png" />
-      <figcaption>My circuit sends a signal through a large resistor and any metal that can be used as a capacitive touch sensor, (here I used a key), and then measures the time taken to recieve the signal.
-        Then a LED strip is connected to power and a N-MOSFET transistor that will control the current to ground, adjusting flow control from a PWM pin which writes to the transistor based on the capacitance. </figcaption>
-
+      <figcaption> </figcaption>
+      <br>
+      <h2>Meaning behind analogRead() Numbers</h2>
+      <p>The numbers recieved from analogRead, correlate to the position of the joystick; The top left corner reads as [0,0] while the bottom right reads as [1023,1023].</p>
+        <br>
+        <h3>Sample serial output from ArduinoIDE</h3>
+        <img src="a6/sampleOutput.png">
+        <br>
+        Here's what the readings look like at each of these joystick postions, and their respective values for the LED after being mapped. For reference, a 10ms Blink speed means there will be 10ms between LED state changes, and a 255 brightness means the LED wull be at full brightness, while a 0 means the LED will be off.</p>
+        <br>
+        <H3>Top Left</H3>
+        <img src="a6/TopLeftOutput.png">
+        <H3>Top Right</H3>
+        <img src="a6/topright.png">
+        <H3>Untouched State</H3>
+        <img src="a6/UntouchedState.png">
+        <H3>Bottom Left</H3>
+        <img src="a6/BottomLeft.png">
+        <H3>Bottom Right</H3>
+        <img src="a6/bottomRight.png">
+        <br>
   <div class="CodeSnippet">
     <h2>Code Snippet</h2>
     <pre>
-        #include &lt;CapacitiveSensor.h&gt
-            int currentBrightness = 0;
-            int targetBrightness = 0;
-            int sensorMin = 5000; // arbitrary high number
-            int sensorMax = 0;
-            CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);    	// 3 megohm resistor between pins 4 & 2, pin 2 is sensor pin, add wire, metal thing
-            
-            void setup() {
-              pinMode(9, OUTPUT); // attaches the transistor gate limiting current from the LED to pin 9 on Arduino
-              cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF); 	// turn off autocalibrate on channel 1 - just as an example
-              Serial.begin(9600);
-            
-             while (millis() < 5000) { // calibrates capactive sensor max and min for the first 5 seconds
-              long start = millis();
-                 long total1 =  cs_4_2.capacitiveSensor(30); Takes reading of the capacitive sensor
-              
-                 // Serial.print(millis() - start);    	// check on performance in milliseconds
-                // Serial.print("\t");             
-                      int sensorValue = total1; // stores the reading from the Capacitive sensor.
-                      if (sensorValue > sensorMax) { // if sensor reading is higher than current maximum reading
-                        sensorMax = sensorValue; // set max reading to current reading
-                      }
-                      if (sensorValue < sensorMin) { // if sensor reading is higher than current minimum reading
-                        sensorMin = sensorValue; // set min reading to current reading
-                      }
-                      delay(10); // adds some time before sensor readings 
-                      Serial.println("Calibrating... TOUCH RAPIDLY"); // Lets user know device is still calibrating
-                    }
-              Serial.print("Sensor Max: "); // tells user the calibrated max sensor reading.
-              Serial.print(sensorMax);
-              Serial.print("\t");
-              Serial.print("Sensor Min: "); // tells user the calibrated max sensor reading.
-              Serial.println(sensorMin);
-            }
-            
-            
-            void loop() {
-                long start = millis();
-                long total1 =  cs_4_2.capacitiveSensor(30);
-                // Serial.print(millis() - start);    	// check on performance in milliseconds
-                // Serial.print("\t");                	// tab character for debug window spacing 
-              targetBrightness = map(total1, sensorMin, sensorMax, 0, 255); //maps the read signal, using the calibrated sensor range mapping onto a 0-255 range compatible with analogWrite
-              targetBrightness = constrain(targetBrightness, 0, 255); // Constrains the value, incase it reads out of range after mapping.
-              Serial.println(targetBrightness);   // prints targetBrightness to serial monitor for debuging 
-              if (targetBrightness < 25) {  // Creates Threshold for target brightness, so that low readings do not make the LED strip flicker.
-                targetBrightness = 0;
-              } else if (targetBrightness > 190) { // Creates Threshold for target brightness, so that high readings do not make the LED strip flicker.
-                targetBrightness = 255;
-              }
-              while (currentBrightness < targetBrightness) { // fades the LED up to the target brightness
-                  currentBrightness++;
-                  analogWrite(9, currentBrightness); 
-                  delay(3); // Controls the speed of the fade
-              }
-              while (currentBrightness > targetBrightness) { // fades the LED down to the target brightness
-                  currentBrightness--;
-                  analogWrite(9, currentBrightness);
-                  delay(3); // Controls the speed of fade
-              }
-              analogWrite(9, currentBrightness); // edge case incase current brightness is equal to target brightness.
-              delay(20); // arbitrary delay to limit data to serial port
-            }                      	
-            
-    </pre>
-    
+
+Arduino Firmware:
+// Christian Kjaer
+// HCDE 439
+// A6 Talking to the Web! 
+
+int x = A0;    
+int y = A1;
+int LED = 9;
+int blinkSpeed = 500; // Default blink speed, representing the time between blinks in ms
+int ledBrightness = 128; // Default brightness out of 255
+long lastBlinkTime = 0; // Stores the last time the LED state changed
+bool ledState = false; // Tracks LED on/off state
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(x, INPUT);
+  pinMode(y, INPUT);
+  pinMode(LED, OUTPUT);
+}
+
+void loop() {
+  int xVal = analogRead(x); // Read joystick X
+  int yVal = analogRead(y); // Read joystick Y
+  // Send data to p5.js in a readable format
+  Serial.print("[");
+  Serial.print(xVal);
+  Serial.print(",");
+  Serial.print(yVal);
+  Serial.println("]");
+  // Check if there's incoming serial data from p5.js
+  if (Serial.available() > 0) {
+    String input = Serial.readStringUntil('\n'); // Reads full input line
+    input.trim(); // Removes spaces and newlines
+
+    if (input.startsWith("[") && input.endsWith("]")) { // Verifies validity of JSON input
+      input = input.substring(1, input.length() - 1); // Removes brackets from recieved JSON 
+      int commaIndex = input.indexOf(","); // Finds comma position, delineating the blink speed and brightness values
+      blinkSpeed = input.substring(0, commaIndex).toInt(); // First value = LED blink speed
+      ledBrightness = input.substring(commaIndex + 1).toInt(); // Second value = LED brightness
+    }
+  }
+    // Handles LED blinking using millis() so that blink speed doesn't affect sample speed;
+    // Previous iterations blinked the LED with a variable delay, resulting in the blink speed also controling joystick reading rate
+  long currentTime = millis(); // Gets current time in milliseconds
+  if (currentTime - lastBlinkTime >= blinkSpeed) { // Checks that the time between blinks is atleast the recieved blink Speed sent from the webpage
+    lastBlinkTime = currentTime; // Updates last blink time
+    ledState = !ledState; // Toggles LED state
+  }
+  analogWrite(LED, ledState ? ledBrightness : 0); // Writes the recieved LED brightness value to the LED if the LED state is true, itherwise it turns off the LED
+  delay(100); // delays the sampling to every 10th of a second
+}
+
+Javascript for p5:
+/ Christian Kjaer
+// HCDE 439 
+// A6 Talking to the Web!
+// Code Attribution ~ Used the Ball p5 example as a starting framework
+
+const BAUD_RATE = 9600; // Baud rate must match the arduino sketch
+
+// Declare global variables
+let port; 
+let connectBtn, sendBtn;
+let targetSpeed = 500;
+let targetBrightness = 128;
+let serialBuffer = ""; // Stores incoming serial data
+
+function setup() {
+    setupSerial();
+    createCanvas(windowWidth, windowHeight); // Create a canvas that is the size of our browser window.
+    // windowWidth and windowHeight are p5 variables
+
+    // Creates a button that sends the current speed and brightness values to the Arduino connected with the LED
+    sendBtn = createButton("Send to Arduino");
+    sendBtn.position(5, 130);
+    sendBtn.mouseClicked(sendToArduino);
+}
+
+function draw() { // Loops to read joystick values and converts them to appropriate values to control LED behavior.
+    const portIsOpen = checkPort(); // Check whether the port is open (see checkPort function below)
+    if (!portIsOpen) {
+        return; 
+    }
+     // Read data from the serial port, append to buffer. Had to add this as serial data was being sent all at once, breaking the JSON parsing
+    let newData = port.read();
+    if (newData) {
+        serialBuffer += newData; // Append incoming data
+    }
+
+  if (serialBuffer.includes("\n")) { // If a new joystick reading is received, process it,
+    let lines = serialBuffer.split("\n"); // Split into full lines
+    serialBuffer = lines.pop(); // Keep unfinished data for next read
+      try { // try/catch added to debug JSON parsing
+        let arr = JSON.parse(lines[0]); // Parse first complete JSON line
+        if (Array.isArray(arr) && arr.length === 2) { // checks for valid input formatting
+          let xVal = arr[0]; // extracts xVal from array
+          let yVal = arr[1]; // extracts yVal from array
+          targetSpeed = Math.round(map(xVal, 0, 1023, 1000, 10)); // Rounds and maps joystick x value to LED speed, with smaller values (leftward direction of joystick) correlating to a larger delay between blinks
+          targetBrightness = Math.round(map(yVal, 0, 1023, 255, 0)); // Rounds and maps Joystick y valueto  LED brightness, with smaller values (upward direction of joystick) correlating to a higher brightness
+          background(220);
+          textSize(20);
+          fill(0);
+          // Display current Joystick input values and what they mean for the LED behavior
+          text(`Joystick X input: ${xVal} -> LED Blinkspeed: ${targetSpeed} ms`, 20, 65);
+          text(`Joystick Y input: ${yVal} -> LED Brightness: ${targetBrightness} / 255`, 20, 95);
+      }
+      } catch (error) {
+        console.error('JSON Parsing Failed: ', error); // added for debugging json parsing
+      }
+    }
+}
+
+function sendToArduino() { // Function to send LED speed & brightness as an array
+    let data = [targetSpeed, targetBrightness]; // Create array
+    port.write(JSON.stringify(data) + "\n"); // Convert to JSON & send over Serial
+}
+
+// Three helper functions for managing the serial connection.
+// Serial setup
+function setupSerial() {
+    port = createSerial();
+    // Check to see if there are any ports we have used previously
+    let usedPorts = usedSerialPorts();
+    if (usedPorts.length > 0) {
+      // If there are ports we've used, open the first one
+      port.open(usedPorts[0], BAUD_RATE);
+    }
+
+    // create a connect button
+    connectBtn = createButton("Connect to Arduino");
+    connectBtn.position(5, 5); // Position the button in the top left of the screen.
+    connectBtn.mouseClicked(onConnectButtonClicked); // When the button is clicked, run the onConnectButtonClicked function
+  }
+  
+  function checkPort() {
+    if (!port.opened()) {
+      // If the port is not open, change button text
+      connectBtn.html("Connect to Arduino");
+      // Set background to gray
+      background("gray");
+      return false;
+    } else {
+      // Otherwise we are connected
+      connectBtn.html("Disconnect");
+      return true;
+    }
+  }
+  
+  function onConnectButtonClicked() {
+    // When the connect button is clicked
+    if (!port.opened()) {
+      // If the port is not opened, we open it
+      port.open(BAUD_RATE);
+    } else {
+      // Otherwise, we close it!
+      port.close();
+    }
+}

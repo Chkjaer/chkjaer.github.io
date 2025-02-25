@@ -24,16 +24,15 @@ function setup() {
 }
 
 function draw() { // Loops to read joystick values and converts them to appropriate values to control LED behavior.
-    const portIsOpen = checkPort(); // Check whether the port is open (see checkPort function below)
-    if (!portIsOpen) {
-        text("port isn't workign", 20, 50);
-        return; 
-    }
-     // Read data from the serial port, append to buffer. Had to add this as serial data was being sent all at once, breaking the JSON parsing
-    let newData = port.read();
-    if (newData) {
-        serialBuffer += newData; // Append incoming data
-    }
+  const portIsOpen = checkPort(); // Check whether the port is open (see checkPort function below)
+  if (!portIsOpen) {
+      return; 
+  }
+    // Read data from the serial port, append to buffer. Had to add this as serial data was being sent all at once, breaking the JSON parsing
+  let newData = port.read();
+  if (newData) {
+      serialBuffer += newData; // Append incoming data
+  }
 
   if (serialBuffer.includes("\n")) { // If a new joystick reading is received, process it,
     let lines = serialBuffer.split("\n"); // Split into full lines
