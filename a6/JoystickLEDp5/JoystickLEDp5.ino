@@ -7,7 +7,7 @@ int y = A1;
 int LED = 9;
 int blinkSpeed = 500; // Default blink speed, representing the time between blinks in ms
 int ledBrightness = 128; // Default brightness out of 255
-unsigned long lastBlinkTime = 0; // Stores the last time the LED state changed
+long lastBlinkTime = 0; // Stores the last time the LED state changed
 bool ledState = false; // Tracks LED on/off state
 
 void setup() {
@@ -28,25 +28,23 @@ void loop() {
   Serial.println("]");
   // Check if there's incoming serial data from p5.js
   if (Serial.available() > 0) {
-    String input = Serial.readStringUntil('\n'); // Read full input line
-    input.trim(); // Remove spaces and newlines
+    String input = Serial.readStringUntil('\n'); // Reads full input line
+    input.trim(); // Removes spaces and newlines
 
     if (input.startsWith("[") && input.endsWith("]")) { // Verifies validity of JSON input
-      input = input.substring(1, input.length() - 1); // Removes brackets
-      int commaIndex = input.indexOf(","); // Finds comma position, delineating the blink speed and output
-      if (commaIndex > 0) { // Ensures valid input of two values delineated by the comma
-        blinkSpeed = input.substring(0, commaIndex).toInt(); // First value = LED blink speed
-        ledBrightness = input.substring(commaIndex + 1).toInt(); // Second value = LED brightness
-      }
+      input = input.substring(1, input.length() - 1); // Removes brackets from recieved JSON 
+      int commaIndex = input.indexOf(","); // Finds comma position, delineating the blink speed and brightness values
+      blinkSpeed = input.substring(0, commaIndex).toInt(); // First value = LED blink speed
+      ledBrightness = input.substring(commaIndex + 1).toInt(); // Second value = LED brightness
     }
   }
     // Handles LED blinking using millis() so that blink speed doesn't affect sample speed;
-    // Previous iterations blinked the LED with a variable delay, but this also controled the speed of the joystick reading rate.
-  unsigned long currentMillis = millis(); // Get current time in milliseconds
-  if (currentMillis - lastBlinkTime >= blinkSpeed) { // Checks that the time between blinks is atleast the blinkSpeed sent from the webpage.
-    lastBlinkTime = currentMillis; // Update last blink time
-    ledState = !ledState; // Toggle LED state
+    // Previous iterations blinked the LED with a variable delay, resulting in the blink speed also controling joystick reading rate
+  long currentTime = millis(); // Gets current time in milliseconds
+  if (currentTime - lastBlinkTime >= blinkSpeed) { // Checks that the time between blinks is atleast the recieved blink Speed sent from the webpage
+    lastBlinkTime = currentTime; // Updates last blink time
+    ledState = !ledState; // Toggles LED state
   }
-  analogWrite(LED, ledState ? ledBrightness : 0); // Writes the recieved LED brightness value to the LED if the LED state is true
+  analogWrite(LED, ledState ? ledBrightness : 0); // Writes the recieved LED brightness value to the LED if the LED state is true, itherwise it turns off the LED
   delay(100); // delays the sampling to every 10th of a second
 }
