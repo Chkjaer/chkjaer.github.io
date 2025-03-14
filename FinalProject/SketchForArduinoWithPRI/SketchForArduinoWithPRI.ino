@@ -14,11 +14,9 @@ void setup() {
   Serial.begin(115200);  // Intializes serial communication with Seed ESP32S3 
   Wire.begin(); // Starts communication with RTC
 
-
   if (!rtc.begin()) {   // Sets up RTC
     while (1);
   }
-
   if (!rtc.isrunning()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Sets RTC time
   }
@@ -38,7 +36,6 @@ void setup() {
 void loop() {
   DateTime now = rtc.now(); // Stores the time at this instant
   int currentTime = (now.hour() * 100) + now.minute(); // Format: HHMM
-
   static int lastMotionState = LOW;  // Tracks previous state of PIR sensor
   int motionDetected = digitalRead(PIR_PIN); // Reads motion sensor ("HIGH" = motion detected, "LOW" = no motion)
 
