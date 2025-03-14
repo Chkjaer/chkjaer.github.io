@@ -11,7 +11,11 @@
     <div class="header">
       <h2>Here is my Final Project: a WeatherClock!<h2>
     </div>
-    
+    <figure>
+      <img src="FinalProject/Demo1.gif">
+      <figcaption>Demonstration of the Final Clock</figcaption>
+    </figure>
+    <br>
     <H2>Concept</H2>
     <p>I hate constantly having to check my phone for things like
        the time or weather, and was also looking to add to the aesth
@@ -97,11 +101,9 @@
     Serial.begin(115200);  // Intializes serial communication with Seed ESP32S3 
     Wire.begin(); // Starts communication with RTC
 
-
     if (!rtc.begin()) {   // Sets up RTC
       while (1);
     }
-
     if (!rtc.isrunning()) {
       rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Sets RTC time
     }
@@ -168,7 +170,6 @@
   #include &lt;MD_MAX72xx.h&gt //  Drives the writing of individual pixels on the LED matrix, used for weather icons
   #include &lt;SPI.h&gt // Needed to drive communication betweeen seed and LED matrix, used by two libraries above
 
-  
   // Hardware Configuration for LED Matrix and Seed ESP32S3
   #define HARDWARE_TYPE MD_MAX72XX::PAROLA_HW
   #define MAX_DEVICES 1
@@ -359,5 +360,10 @@
     }
   }
         </pre>
+  <figure>
+    <img src="FinalProject/Demo2.gif">
+    <figcaption>Demonstration of Motion Activation</figcaption>
+  </figure>
+  <a href="https://drive.google.com/file/d/1fR5e6eS3GlUuMHvEWRiRBuXOyuiURlVA/view?usp=drive_link">Full Video Demonstration</a>
   </body>
 </html>
