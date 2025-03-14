@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+    <title>Christian Kjaer's HCDE 439 Final Project!</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>Final Project!</h1>
+    <div class="header">
+      <h2>Here is my Final Project: a WeatherClock!<h2>
+    </div>
+    
+    <H2>Concept</H2>
+    <p>I hate constantly having to check my phone for things like
+       the time or weather, and was also looking to add to the aesth
+       etic of my room. I wanted to make something that would blend with the 
+       style, while still being useful. I decided to build a motion sensor 
+       activated clock that also displays the current weather conditions 
+       for your area. This way, I can always tell the time while moving in my room. 
+       It's especially cool when I open the door and it turns on as I enter the room.</p>
+       <br>
+    <H1>Technical Implementation</H1>
+    <H3>Bill of Materials</H3>
+    <ul> 
+        <li>Arduino Uno</li>
+        <li>Seed Studio XIAO ESP32S3</li>
+        <li>PRI Motion Sensor</li>
+        <li>4 Digit 7 Segment Display</li>
+        <li>RTC Module</li>
+        <li>8X8 LED Matrix</li>
+        <li>3x 1000 Ohm Resistors </li>
+        <ul>        
+            <li>Needed for voltage division from Arduino TX (5v) -> Seed RX (3.3V)</li>
+        </ul>
+        <li>3x 330 Ohm Resistors</li>
+        <ul>
+            <li>Needed on digit pins of 7 segment, to not burn out the display</li>
+        </ul>
+        <li>Diode for Vin to Seed</li>
+        <li>OpenWeather API for Weather Information</li>
+    </ul>
+    <br>
+    <h2>Circuit</h2>
+    <img src="FinalProject/IMG_4096 (1).jpg">
+    <br>
+    <h2>Schematics</h2>
+      <img src="FinalProject/Schematic.png">
+    <h2>Code</h2>
+    <h3>Code Summary</h3>
+    <b>Arduino handles motion sensing and the 7 segment display</b>
+    <ul>
+        <li>Libraries</li>
+        <ul>
+            <li>I2C communication with the RTC module</li>
+            <li>RTClib.h -> High level use of RTC Module</li>
+            <li>SevSeg.h -> High level use of 4 Digit 7 Segment Display</li>
+        </ul>
+        <li>Uses RTC to keep track of time for the clock,</li>
+        <li>When motion is detected, will turn on time display until 5 seconds has gone by with no motion (motion resets the timer).</li> 
+        <li>Sends “ON”/”OFF” over serial to the Seed ESP32S3 depending on the necessary state change.</li>
+    </ul>
+    <br>
+      <b>Seed Studio XIAO ESP32S3 handles weather data and LED matrix</b>
+      <ul>
+          <li>Libraries</li>
+          <ul>
+              <li>WiFi.h -> Allows us to use wifi capability aboard Seed</li>
+              <li>HTTPClient.h -> Allows us to make API calls</li>
+              <li>ArduinoJson.h -> allows for easy JSON parsing in ArduinoIDE</li>
+              <li>MD_Parola.h -> Drives the text effects for temperature readings on LED matrix</li>
+              <li>MD_MAX72xx.h -> Drives the writing of individual pixels on the LED matrix, used for weather icons</li>
+          </ul>
+          <li>Connects to Wifi and OpenWeatherAPI</li>
+          <li>Fetches weather data once at initialization, and then updates every 10 minutes</li>
+          <li>Stores Icons for each weather type</li>
+          <li> When Seed RX receives “ON” through Serial, will display the correct weather icon for 3 seconds, followed by the temperature in fahrenheit rolling across the LED matrix</li>
+        </ul>
+    <br>
+      <h3>Full Code</h3>
+      <h4>Arduino Code</h4>
+        <pre>
+  #include &lt;Wire.h&gt    // For communication with RTC module
+  #include &lt;RTClib.h&gt // For RTC module
+  #include "SevSeg.h"  // For Seven Segment Display
+
+  #define PIR_PIN A0  // PIR Motion Sensor Pin
+
+  RTC_DS1307 rtc; // Creates RTC object
+  SevSeg sevseg; // Creates SevSeg object
+
+  bool systemOn = false; // initializes storage of system status, "OFF" when motion is not detected for 5 seconds
+  unsigned long motionStartTime = 0; // used to keep track of how long ago motion was last detected
+
+  void setup() {
+    Serial.begin(115200);  // Intializes serial communication with Seed ESP32S3 
+    Wire.begin(); // Starts communication with RTC
+
+
+    if (!rtc.begin()) {   // Sets up RTC
+      while (1);
+    }
+
+    if (!rtc.isrunning()) {
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Sets RTC time
+    }
+
+    // Sets up SevSeg Display
+    byte numDigits = 4;
+    byte digitPins[] = {2, 3, 4, 5};  
+    byte segmentPins[] = {6, 7, 8, 9, 10, 11, 12, 13}; 
+    bool resistorsOnSegments = false;
+    sevseg.begin(COMMON_CATHODE, numDigits, digitPins, segmentPins, resistorsOnSegments);
+    sevseg.setBrightness(90);
+
+    // Setup PIR Sensor
+    pinMode(PIR_PIN, INPUT);
+  }
+
+  void loop() {
+    DateTime now = rtc.now(); // Stores the time at this instant
+    int currentTime = (now.hour() * 100) + now.minute(); // Format: HHMM
+
+    static int lastMotionState = LOW;  // Tracks previous state of PIR sensor
+    int motionDetected = digitalRead(PIR_PIN); // Reads motion sensor ("HIGH" = motion detected, "LOW" = no motion)
+
+    // If it detects motion and system wasn't already on, will both turn on the seven segment display, 
+    // and send a "ON" over serial to Seed
+    if (motionDetected == HIGH && lastMotionState == LOW) { 
+      motionStartTime = millis();  // Resets timer
+      if (!systemOn) {
+        systemOn = true;
+        Serial.println("ON");  // Sends "ON" to Seed
+      }
+    }
+
+    // Resets timer if motion is detected again, to prevent blinking on and off while motion is happening
+    if (motionDetected == HIGH) {
+      motionStartTime = millis();
+    }
+
+    // Checks if 5 seconds have passed since last motion, then turns seven segment display off and prints "OFF" to seed over serial
+    if (systemOn && millis() - motionStartTime > 5000) {
+      systemOn = false;
+      Serial.println("OFF");  // Sends "OFF" to Seed
+    }
+
+    lastMotionState = motionDetected;  // Updates last motion state     
+
+    // Updates 7-segment display only if system is ON
+    if (systemOn) {
+      sevseg.setNumber(currentTime, 2);  // Shows time with decimal point in the middle as pseudo ":"
+      sevseg.refreshDisplay();
+    } else { 
+      sevseg.blank(); // Turns off display
+      sevseg.refreshDisplay();
+    }
+  }
+
+      </pre>
+      <h4>Seed Studio XIAO ESP32S3 Code</h4>
+      <pre>
+  #include &lt;WiFi.h&gt // Allows for Wifi capabilities of Seed ESP32S3
+  #include &lt;HTTPClient.h&gt // Allows for API calls and responses
+  #include &lt;ArduinoJson.h&gt // Allows for easy JSON parsing in Arduino
+  #include &lt;MD_Parola.h&gt// Drives the text effects for temperature readings on LED matrix
+  #include &lt;MD_MAX72xx.h&gt //  Drives the writing of individual pixels on the LED matrix, used for weather icons
+  #include &lt;SPI.h&gt // Needed to drive communication betweeen seed and LED matrix, used by two libraries above
+
+  
+  // Hardware Configuration for LED Matrix and Seed ESP32S3
+  #define HARDWARE_TYPE MD_MAX72XX::PAROLA_HW
+  #define MAX_DEVICES 1
+  #define CS_PIN 5   
+  #define CLK_PIN 8  
+  #define DATA_PIN 9 
+  #define RX_PIN RX
+  #define TX_PIN TX
+  
+  //*NOTE These are for the same LED matrix, but act as two separate objects controlling the LED matrix.
+  // Creatse Parola object for scrolling text
+  MD_Parola P = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
+  // Creates MAX72XX object for icon display
+  MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
+  
+  // Wi-Fi Credentials
+  const char* ssid = "FAKEWIFI";
+  const char* password = "FAKEPASS";
+  
+  // OpenWeather API Setup
+  const char* apiKey = ""; // Key removed before I pushed to github. Generate one at https://openweathermap.org/api
+  const char* city = "Seattle";  
+  const char* country = "US";    
+  String openWeatherUrl = "http://api.openweathermap.org/data/2.5/weather?q=" + 
+                          String(city) + "," + String(country) + 
+                          "&appid=" + String(apiKey) + "&units=imperial";
+  
+  // Stores current weather data
+  String currentWeatherCondition = "";
+  float currentTemperature = 0;
+  
+  bool systemOn = false;  // Tracks whether the weather display should be ON or OFF
+  
+  // Weather Icons
+  const uint8_t sunIcon[8] = {
+    0b00000000,
+    0b00111100,
+    0b01111110,
+    0b01111110,
+    0b01111110,
+    0b00111100,
+    0b00000000,
+    0b00000000
+  };
+  
+  const uint8_t rainIcon[8] = {
+    0b00000000,
+    0b00111100,
+    0b01111110,
+    0b01111110,
+    0b00100100,
+    0b01001000,
+    0b10010000,
+    0b00000000
+  };
+  
+  const uint8_t cloudIcon[8] = {
+    0b00000000,
+    0b00011000,
+    0b00111100,
+    0b01111110,
+    0b11111111,
+    0b11111111,
+    0b01111110,
+    0b00000000
+  };
+  
+  const uint8_t snowIcon[8] = {
+    0b10010010,
+    0b01010100,
+    0b00111000,
+    0b01111100,
+    0b00111000,
+    0b01010100,
+    0b10010010,
+    0b00000000
+  };
+  
+  const uint8_t thunderIcon[8] = {
+    0b00011000,
+    0b00111100,
+    0b01100110,
+    0b00011000,
+    0b00011110,
+    0b00011000,
+    0b01100000,
+    0b00000000
+  };
+  
+  void setup() {
+    Serial1.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN); // Starts communication with Arduino over serial,
+    Serial.begin(115200); // Starts communication with ArduinoIDE serial monitor for debugging
+    WiFi.begin(ssid, password); // Initializes WiFi
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500); // If isn't connected, will retry every half second
+    }
+  
+    //*NOTE This is the same LED matrix, but two separate objects 
+    // are needed as they perform two different functions and use two different libraries
+    P.begin(); // Starts LED matrix object for text
+    P.setIntensity(5); // Sets brightness
+    P.displayClear(); // Clears the display for this object
+  
+    mx.begin(); // Starts LED matrix object for icons
+    mx.control(MD_MAX72XX::INTENSITY, 5); // Sets brightness
+    mx.clear(); // Clears the display for this object
+  
+    // Fetches weather data
+    getWeatherData();
+  }
+  
+  void loop() {
+    Serial.print("Waiting...."); // Prints to serial monitor for debugging
+    if (Serial1.available()) { // Reads System Status data over Serial from Arduino 
+        Serial.println("received!"); // for debugging 
+        String message = Serial1.readStringUntil('\n'); // Ensures only one line is read, OFF/ON messages are separated by a "\n"
+        Serial.println(message); // for debugging
+        message.trim();  // Removes any extra spaces or newlines
+  
+        if (message == "ON") { // If motion is detected, Seed will receive "ON" and turn on the LED matrix
+            systemOn = true;
+        } else if (message == "OFF") {  // If motion is no longer detected for 5 seconds, Seed will receive "OFF" and turn off the LED matrix
+            systemOn = false;
+            // Clears the LED matrix 
+            P.displayClear(); 
+            mx.clear();
+        }
+    }
+  
+    if (systemOn) { // Turns on display when motion is detected
+      displayWeatherIcon(currentWeatherCondition);
+      delay(3000); // Shows weather icon for 3 seconds
+      displayTemperature(currentTemperature); // Shows temperature as text that scrolls across screen
+      delay(1000); // 1 second pause after temperature animation finishes
+    } 
+  
+    // Refreshes Weather Data Every 10 Minutes
+    static unsigned long lastWeatherUpdate = 0;
+    if (millis() - lastWeatherUpdate > 600000) { 
+        getWeatherData();
+        lastWeatherUpdate = millis();
+    }
+  }
+  
+  // Fetch Weather Data from OpenWeather
+  void getWeatherData() {
+    if (WiFi.status() == WL_CONNECTED) { 
+      HTTPClient http; 
+      http.begin(openWeatherUrl); // Initializes the request to the OpenWeather API
+      int httpResponseCode = http.GET(); 
+      if (httpResponseCode > 0) { // If API call is successful, this processes the JSON repsonse
+        String response = http.getString(); 
+        DynamicJsonDocument doc(1024); // Creates JSON document with 1024 bytes of memory to parse the response
+        deserializeJson(doc, response); // Converts JSON string into object that allows access for the request weather information
+  
+        //Access weather conditions and temperature from JSON data
+        currentWeatherCondition = String(doc["weather"][0]["description"].as<const char*>()); // Conditions stored as a string
+        currentTemperature = doc["main"]["temp"].as<float>(); // Temperature stored as a float
+      } 
+      http.end();
+    } 
+  }
+  
+  // Display Weather Icon on LED Matrix
+  void displayWeatherIcon(String weatherDesc) {
+    const uint8_t* icon;
+    // Matches icon to weather condition received from API
+    if (weatherDesc.indexOf("clear") != -1) icon = sunIcon; 
+    else if (weatherDesc.indexOf("rain") != -1) icon = rainIcon; 
+    else if (weatherDesc.indexOf("snow") != -1) icon = snowIcon;
+    else if (weatherDesc.indexOf("cloud") != -1) icon = cloudIcon;
+    else icon = thunderIcon;
+    mx.clear(); // Clears display of previous icon
+    for (int row = 0; row < 8; row++) { // Manually sets each individual pixel of matrix to display appropriate weather icon 
+      mx.setRow(0, row, icon[row]); 
+    }
+  }
+  
+  // Scroll Temperature on LED Matrix
+  void displayTemperature(float temperature) {
+    char tempStr[6];  
+    snprintf(tempStr, sizeof(tempStr), "%.1fF", temperature); // Formats temperature reading as __._F
+    P.displayClear(); // Clears display of previous text
+    P.setZoneEffect(0, true, PA_FLIP_LR); // Inverts text horizontally, added to fix bug where text was mirrored by default
+    P.displayText(tempStr, PA_CENTER, 100, 0, PA_SCROLL_RIGHT, PA_SCROLL_RIGHT); // Scrolls the temperature across the matrix
+    while (!P.displayAnimate()) {
+      // Keep animating until done
+    }
+  }
+        </pre>
+  </body>
+</html>
